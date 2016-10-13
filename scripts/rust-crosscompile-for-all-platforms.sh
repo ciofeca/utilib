@@ -8,6 +8,7 @@ This script:
 - builds debug and release for the current platform
 - also attempts to build release for ARMv7 (32 bit) and PowerPC (32 bit) Linux targets
 - also attempts to build release for x86 (64 bit) for Windows (MinGW) target
+- also attempts to build release for musl (64 bit) Linux target
 - strips out symbols for release executables
 - prints out executable segments sizes
 - note: cargo builds are started in parallel
@@ -23,18 +24,18 @@ Rustup targets installation:
     rustup target install armv7-unknown-linux-gnueabihf
     rustup target install powerpc-unknown-linux-gnu
     rustup target install x86_64-pc-windows-gnu
-
+    rustup target install x86_64-unknown-linux-musl
 
 Rustup configuration file ~/.cargo/config must contain:
 
-[target.armv7-unknown-linux-gnueabihf]
-linker = "arm-linux-gnueabihf-gcc"
+    [target.armv7-unknown-linux-gnueabihf]
+    linker = "arm-linux-gnueabihf-gcc"
 
-[target.powerpc-unknown-linux-gnu]
-linker = "powerpc-linux-gnu-gcc"
+    [target.powerpc-unknown-linux-gnu]
+    linker = "powerpc-linux-gnu-gcc"
 
-[target.x86_64-pc-windows-gnu]
-linker = "x86_64-w64-mingw32-gcc"
+    [target.x86_64-pc-windows-gnu]
+    linker = "x86_64-w64-mingw32-gcc"
 
 
 Ubuntu 16.04 host requirements for ARMv7 cross-compiling:
@@ -48,6 +49,9 @@ Ubuntu 16.04 host requirements for PowerPC (32 bit with Ubuntu 12.04 or 14.04) c
 
 Ubuntu 16.04 host requirements for x86/64 MinGW (Windows) cross-compiling:
     sudo apt install gcc-mingw-w64-x86-64
+
+Ubuntu 16.04 host requirements for x86/64 musl:
+    sudo apt install musl musl-tools musl-dev
 
 Ubuntu/PPC 12.04 target requirements: upgrade libc6 and libnih from Ubuntu/PPC 14.04 (download from launchpad.net):
     dpkg -i libc6_2.18*ubuntu*powerpc.deb libc-dev-bin_2.18*ubuntu*powerpc.deb libc6-dev_2.18*ubuntu*powerpc.deb
@@ -83,12 +87,15 @@ PPPC=powerpc-linux-gnu
 AMGW=x86_64-pc-windows-gnu
 PMGW=x86_64-w64-mingw32
 
+AMSL=x86_64-unknown-linux-musl
+PMSL=
 
 cargo build --quiet &
 cargo build --quiet --release &
 cargo build --quiet --release --target=$AARM &
 cargo build --quiet --release --target=$APPC &
 cargo build --quiet --release --target=$AMGW &
+cargo build --quiet --release --target=$AMSL &
 wait
 
 # release builds: executable names
@@ -97,14 +104,16 @@ RNAT=target/release/$NAME
 RARM=target/$AARM/release/$NAME
 RPPC=target/$APPC/release/$NAME
 RMGW=target/$AMGW/release/$NAME.exe
+RMSL=target/$AMSL/release/$NAME
 
 # stripping symbols from executables:
 strip $RNAT
 $PARM-strip $RARM
 $PPPC-strip $RPPC
 $PMGW-strip $RMGW
+strip $RMSL
 
-LST="target/debug/$NAME $RNAT $RARM $RPPC $RMGW"
+LST="target/debug/$NAME $RNAT $RARM $RPPC $RMGW $RMSL"
 
 for a in $LST
 do
